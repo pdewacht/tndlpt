@@ -188,7 +188,7 @@ static bool setup_emm386() {
   err = emm386_virtualize_io(0x1E0, 0x2C0, 5, &emm386_table, (int)&resident_end, &v);
   if (err) {
     cputs("EMM386 I/O virtualization failed\r\n");
-    exit(1)
+    exit(1);
   }
   config.emm_type = EMM_EMM386;
   config.emm386_virt_io_handle = v;
@@ -472,7 +472,9 @@ int main(void) {
 
   /* reset the sound chip */
   outp(cfg->lpt_port + 2, 1);
+  delay(100);
   outp(cfg->lpt_port + 2, 9);
+  delay(100);
   /* silence */
   outp(0x205, 0x9F);
   outp(0x205, 0xBF);
