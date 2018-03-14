@@ -366,6 +366,36 @@ static void status(struct config __far *cfg) {
 }
 
 
+static const char pp_mode[8][5] = {
+  "SPP", "PS/2", "FIFO", "ECP", "EPP", "???", "Test", "Cfg"
+};
+
+static void ecp(struct config __far *cfg) {
+  int dcr = cfg->lpt_port + 2;
+  int ecr = cfg->lpt_port + 0x402;
+  int orig_mode = (inp(ecr) >> 5) & 7;
+
+  outp(dcr, 0x00);
+  if (! ((inp(ecr) & 3) == 1 && (inp(dcr) & 3) != 1)) {
+    cputs("ECP not found (first failed)\r\n");
+    return;
+  }
+
+  outp(ecr, 0x34);
+  if (inp(ecr) != 0x35) {
+    cputs("ECP not found (second test failed)\r\n");
+    return;
+  }
+
+  cputs("ECP found, forcing SPP mode\r\n");
+  outp(ecr, 0x00);
+
+  cputs("Previous mode was: ");
+  cputs(pp_mode[orig_mode]);
+  cputs("\r\n");
+}
+
+
 int main(void) {
   bool installed = false;
   bool found_unused_amis_id = false;
@@ -470,6 +500,7 @@ int main(void) {
 
   status(cfg);
 
+  ecp(cfg);
   /* reset the sound chip */
   outp(cfg->lpt_port + 2, 1);
   delay(100);
