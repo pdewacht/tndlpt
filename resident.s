@@ -200,7 +200,7 @@ tnd_output:
         ;; in al, dx
 
         dec dx
-        mov cx, 0x10
+        mov cx, 0x18
         in al, dx               ; delay to ensure READY toggled
 @@W:    in al, dx
         test al, 0x40
@@ -210,9 +210,9 @@ tnd_output:
         mov al, 9
         out dx, al
 
-        ;; mov dx, 0x3FF
-        ;; mov al, cl
-        ;; out dx, al
+        mov dx, 0x3FF
+        mov al, cl
+        out dx, al
 
         pop dx
         pop cx

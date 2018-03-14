@@ -500,17 +500,25 @@ int main(void) {
 
   status(cfg);
 
-  ecp(cfg);
-  /* reset the sound chip */
-  outp(cfg->lpt_port + 2, 1);
-  delay(100);
-  outp(cfg->lpt_port + 2, 9);
-  delay(100);
-  /* silence */
-  outp(0x205, 0x9F);
-  outp(0x205, 0xBF);
-  outp(0x205, 0xDF);
-  outp(0x205, 0xFF);
+  {
+    char buf[5];
+    ecp(cfg);
+    /* reset the sound chip */
+    outp(cfg->lpt_port + 2, 1);
+    delay(100);
+    outp(cfg->lpt_port + 2, 9);
+    delay(100);
+    /* silence */
+    outp(0x205, 0x9F);
+    cputs("A="); cputs(itoa(inp(0x3FF), buf, 10));
+    outp(0x205, 0xBF);
+    cputs(" B="); cputs(itoa(inp(0x3FF), buf, 10));
+    outp(0x205, 0xDF);
+    cputs(" C="); cputs(itoa(inp(0x3FF), buf, 10));
+    outp(0x205, 0xFF);
+    cputs(" D="); cputs(itoa(inp(0x3FF), buf, 10));
+    cputs("\r\n");
+  }
 
   if (!installed) {
     /* free environment block */
