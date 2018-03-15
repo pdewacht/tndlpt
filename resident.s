@@ -200,8 +200,10 @@ tnd_output:
         ;; in al, dx
 
         dec dx
-        mov cx, 0x18
         in al, dx               ; delay to ensure READY toggled
+        in al, dx
+
+        mov cx, 0x18
 @@W:    in al, dx
         test al, 0x40
         loopz @@W
