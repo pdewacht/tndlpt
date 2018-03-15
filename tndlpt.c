@@ -377,22 +377,46 @@ static void ecp(struct config __far *cfg) {
 
   outp(dcr, 0x00);
   if (! ((inp(ecr) & 3) == 1 && (inp(dcr) & 3) != 1)) {
-    cputs("ECP not found (first failed)\r\n");
+    cputs("\r\nECP not found (first failed)\r\n");
     return;
   }
 
   outp(ecr, 0x34);
   if (inp(ecr) != 0x35) {
-    cputs("ECP not found (second test failed)\r\n");
+    cputs("\r\nECP not found (second test failed)\r\n");
     return;
   }
 
-  cputs("ECP found, forcing SPP mode\r\n");
+  cputs("\r\nECP found, forcing SPP mode\r\n");
   outp(ecr, 0x00);
 
-  cputs("Previous mode was: ");
+  cputs("  (previous mode was: ");
   cputs(pp_mode[orig_mode]);
-  cputs("\r\n");
+  cputs(")\r\n");
+}
+
+
+static void ready_test(struct config __far *cfg) {
+  int data_port = cfg->lpt_port;
+  int status_port = cfg->lpt_port + 1;
+  int ctrl_port = cfg->lpt_port + 2;
+  char stat[24];
+  int i, h;
+
+  outp(data_port, 0x9F);
+  outp(ctrl_port, 12);
+  for (i = 0; i < sizeof(stat); i++) {
+    stat[i] = inp(status_port);
+  }
+  outp(ctrl_port, 9);
+
+  h = sizeof(stat) / 2;
+  cputs("\r\nReady test\r\n");
+  for (i = 0; i < h; i++) {
+    cprintf("  Status #%-2d = 0x%02x %s    Status #%-2d = 0x%02x %s\r\n",
+            i, stat[i], (stat[i] & 0x40) ? "(READY)  " : "(NOT RDY)",
+            i+h, stat[i+h], (stat[i+h] & 0x40) ? "(READY)  " : "(NOT RDY)");
+  }
 }
 
 
@@ -500,23 +524,37 @@ int main(void) {
 
   status(cfg);
 
+  ecp(cfg);
+  delay(100);
+
+  /* reset the sound chip */
+  outp(cfg->lpt_port + 2, 1);
+  delay(100);
+  outp(cfg->lpt_port + 2, 9);
+  delay(100);
+
+  /* ready test */
+  ready_test(cfg);
+  delay(100);
+
+  /* reset the sound chip */
+  outp(cfg->lpt_port + 2, 1);
+  delay(100);
+  outp(cfg->lpt_port + 2, 9);
+  delay(100);
+
   {
-    char buf[5];
-    ecp(cfg);
-    /* reset the sound chip */
-    outp(cfg->lpt_port + 2, 1);
-    delay(100);
-    outp(cfg->lpt_port + 2, 9);
-    delay(100);
     /* silence */
+    char buf[5];
+    cputs("\r\nSilencing\r\n");
     outp(0x205, 0x9F);
-    cputs("A="); cputs(itoa(inp(0x3FF), buf, 10));
+    cputs("  A="); cputs(itoa(inp(0x3FF), buf, 10));
     outp(0x205, 0xBF);
-    cputs(" B="); cputs(itoa(inp(0x3FF), buf, 10));
+    cputs("  B="); cputs(itoa(inp(0x3FF), buf, 10));
     outp(0x205, 0xDF);
-    cputs(" C="); cputs(itoa(inp(0x3FF), buf, 10));
+    cputs("  C="); cputs(itoa(inp(0x3FF), buf, 10));
     outp(0x205, 0xFF);
-    cputs(" D="); cputs(itoa(inp(0x3FF), buf, 10));
+    cputs("  D="); cputs(itoa(inp(0x3FF), buf, 10));
     cputs("\r\n");
   }
 
