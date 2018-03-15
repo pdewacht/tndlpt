@@ -377,7 +377,7 @@ static void ecp(struct config __far *cfg) {
 
   outp(dcr, 0x00);
   if (! ((inp(ecr) & 3) == 1 && (inp(dcr) & 3) != 1)) {
-    cputs("\r\nECP not found (first failed)\r\n");
+    cputs("\r\nECP not found (first test failed)\r\n");
     return;
   }
 
