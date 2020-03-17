@@ -396,30 +396,6 @@ static void ecp(struct config __far *cfg) {
 }
 
 
-static void ready_test(struct config __far *cfg) {
-  int data_port = cfg->lpt_port;
-  int status_port = cfg->lpt_port + 1;
-  int ctrl_port = cfg->lpt_port + 2;
-  char stat[24];
-  int i, h;
-
-  outp(data_port, 0x9F);
-  outp(ctrl_port, 12);
-  for (i = 0; i < sizeof(stat); i++) {
-    stat[i] = inp(status_port);
-  }
-  outp(ctrl_port, 9);
-
-  h = sizeof(stat) / 2;
-  cputs("\r\nReady test\r\n");
-  for (i = 0; i < h; i++) {
-    cprintf("  Status #%-2d = 0x%02x %s    Status #%-2d = 0x%02x %s\r\n",
-            i, stat[i], (stat[i] & 0x40) ? "(READY)  " : "(NOT RDY)",
-            i+h, stat[i+h], (stat[i+h] & 0x40) ? "(READY)  " : "(NOT RDY)");
-  }
-}
-
-
 int main(void) {
   bool installed = false;
   bool found_unused_amis_id = false;
@@ -533,29 +509,14 @@ int main(void) {
   outp(cfg->lpt_port + 2, 9);
   delay(100);
 
-  /* ready test */
-  ready_test(cfg);
-  delay(100);
-
-  /* reset the sound chip */
-  outp(cfg->lpt_port + 2, 1);
-  delay(100);
-  outp(cfg->lpt_port + 2, 9);
-  delay(100);
-
   {
     /* silence */
     char buf[5];
     cputs("\r\nSilencing\r\n");
     outp(0x205, 0x9F);
-    cputs("  A="); cputs(itoa(inp(0x3FF), buf, 10));
     outp(0x205, 0xBF);
-    cputs("  B="); cputs(itoa(inp(0x3FF), buf, 10));
     outp(0x205, 0xDF);
-    cputs("  C="); cputs(itoa(inp(0x3FF), buf, 10));
     outp(0x205, 0xFF);
-    cputs("  D="); cputs(itoa(inp(0x3FF), buf, 10));
-    cputs("\r\n");
   }
 
   if (!installed) {

@@ -158,46 +158,12 @@ tnd_output:
         push cx
         push dx
 
-        ;; reverse bits in al:
-        ;; shl al, 1
-	;; rcr ah, 1
-	;; shl al, 1
-	;; rcr ah, 1
-	;; shl al, 1
-	;; rcr ah, 1
-	;; shl al, 1
-	;; rcr ah, 1
-	;; shl al, 1
-	;; rcr ah, 1
-	;; shl al, 1
-	;; rcr ah, 1
-	;; shl al, 1
-	;; rcr ah, 1
-	;; shl al, 1
-	;; rcr ah, 1
-	;; mov al, ah
-
         mov dx, cs:[_config.lpt_port]
         out dx, al
         inc dx
         inc dx
         mov al, 12
         out dx, al
-
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
-        ;; in al, dx
 
         dec dx
 
@@ -214,10 +180,6 @@ tnd_output:
 
         inc dx
         mov al, 9
-        out dx, al
-
-        mov dx, 0x3FF
-        mov al, cl
         out dx, al
 
         pop dx
