@@ -4,13 +4,10 @@
         public _amis_id
         public _amis_handler
 
-        public _int15_handler
-
         public _emm386_table
         public _qemm_handler
 
         public _config
-        public _rom_table
 
 
 cmp_ah  macro
@@ -62,36 +59,12 @@ _amis_id: db 0xFF
 
 
 amis_hook_table:
-        dw 0x15
-        dw _int15_handler
         db 0x2D
         dw _amis_handler
 
 
 _retf:
         retf
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; INT 15 HANDLER
-
-
-_int15_handler:
-        iisp_header int15_next_handler
-        cmp ah, 0xC0
-        je @@int15_get_rom_table
-        jmp dword ptr cs:int15_next_handler
-@@int15_get_rom_table:
-        sti
-        push cs
-        pop es
-        mov bx, offset _rom_table
-        xor ah, ah
-        retf 2
-
-_rom_table      db 8
-                db 0xFC, 0x0B, 0x00, 0x70
-                db 0x00, 0x00, 0x00, 0x00
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

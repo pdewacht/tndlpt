@@ -321,16 +321,6 @@ static bool uninstall(struct config __far *cfg) {
     return false;
   }
 
-  /* Unhook INT 15 handler */
-  current_handler = (struct iisp_header __far *) _dos_getvect(0x15);
-  if (FP_SEG(current_handler) == FP_SEG(cfg)) {
-    _dos_setvect(0x15, current_handler->next_handler);
-  } else {
-    if (!amis_unhook(current_handler, FP_SEG(cfg))) {
-      return false;
-    }
-  }
-
   /* Unhook AMIS handler */
   current_handler = (struct iisp_header __far *) _dos_getvect(0x2D);
   if (FP_SEG(current_handler) == FP_SEG(cfg)) {
@@ -492,10 +482,6 @@ int main(void) {
     /* hook AMIS interrupt */
     amis_handler.next_handler = _dos_getvect(0x2D);
     _dos_setvect(0x2D, (void (__interrupt *)()) &amis_handler);
-
-    /* hook INT 15 */
-    int15_handler.next_handler = _dos_getvect(0x15);
-    _dos_setvect(0x15, (void (__interrupt *)()) &int15_handler);
   }
 
   status(cfg);

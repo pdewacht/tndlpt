@@ -43,8 +43,6 @@ extern struct iisp_header RESIDENT amis_handler;
 extern char RESIDENT amis_header[];
 extern char RESIDENT amis_id;
 
-extern struct iisp_header RESIDENT int15_handler;
-
 extern char RESIDENT emm386_table[];
 extern struct iisp_header RESIDENT qemm_handler;
 
