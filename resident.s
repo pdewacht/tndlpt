@@ -15,7 +15,7 @@ cmp_ah  macro
         endm
 
 
-        RESIDENT segment word use16 public 'CODE'
+        _TEXT segment word use16 public 'CODE'
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -162,5 +162,5 @@ tnd_ignore:
         clc
         retf
 
-        RESIDENT ends
+        _TEXT ends
         end

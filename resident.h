@@ -35,17 +35,15 @@ _Packed struct config {
 };
 
 
-#define RESIDENT __based(__segname("RESIDENT"))
+extern struct config config;
 
-extern struct config RESIDENT config;
+extern struct iisp_header amis_handler;
+extern char amis_header[];
+extern char amis_id;
 
-extern struct iisp_header RESIDENT amis_handler;
-extern char RESIDENT amis_header[];
-extern char RESIDENT amis_id;
+extern char emm386_table[];
+extern struct iisp_header qemm_handler;
 
-extern char RESIDENT emm386_table[];
-extern struct iisp_header RESIDENT qemm_handler;
-
-extern char RESIDENT resident_end[];
+extern char resident_end[];
 
 #pragma enum pop
