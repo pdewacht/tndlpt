@@ -233,6 +233,11 @@ void music_start() {
 
 void music_shutdown() {
   timer_shutdown();
+
+  tndlpt_output(0x9F);
+  tndlpt_output(0xBF);
+  tndlpt_output(0xDF);
+  tndlpt_output(0xFF);
 }
 
 

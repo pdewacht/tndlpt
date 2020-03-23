@@ -100,7 +100,10 @@ int main(int argc, char *argv[]) {
   }
 
   tndlpt_port = setup();
-  tndlpt_init();
+  if (!tndlpt_init()) {
+    cputs("\r\nError: TNDLPT is not responding\r\n");
+    return 1;
+  }
 
   cputs("\r\nPress any key to start the music...");
   do {
@@ -113,7 +116,6 @@ int main(int argc, char *argv[]) {
   while (!interrupted && music_loop() && !kbhit()) {
   }
   music_shutdown();
-  tndlpt_init();
 
   while (kbhit()) {
     getch();
