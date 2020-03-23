@@ -15,7 +15,9 @@ action opt_lpt         { config.bios_id = *p - '1'; }
 end = (0 | 13) @{ fbreak; };
 sep = " "+;
 
-load_opt = empty;
+load_opt = (
+  /LPT[123]/i  @opt_lpt
+);
 
 load   = (load_opt . (sep . load_opt)*)?  %mode_load;
 unload = /UNLOAD/i                        @mode_unload;
