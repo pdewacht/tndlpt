@@ -3,4 +3,5 @@
 *.exe
 *.com
 
-cmdline.c
+/tndlpt/cmdline.c
+/tndvgm/vgm.c
