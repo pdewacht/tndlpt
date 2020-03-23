@@ -7,7 +7,8 @@
         public _emm386_table
         public _qemm_handler
 
-        public _config
+        extern _config : near
+        extern tndlpt_output_ : proc
 
 
 cmp_ah  macro
@@ -20,6 +21,14 @@ cmp_ah  macro
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; AMIS API IMPLEMENTATION
+
+
+_amis_header:
+        db 'SERDACO '           ;8 bytes: manufacturer
+        db 'TNDLPT  '           ;8 bytes: product
+        db 0                    ;no description
+;;; Configuration pointer immediately follows AMIS header
+        dw _config
 
 
 ;;; IBM Interrupt Sharing Protocol header
@@ -68,99 +77,59 @@ _retf:
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; EMM386 GLUE CODE
+
+
+        even
+_emm386_table:
+        dw 0x1E0, tnd_emulate
+        dw 0x1E1, tnd_ignore
+        dw 0x201, tnd_ignore
+        dw 0x205, tnd_emulate
+        dw 0x2C0, tnd_emulate
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; QEMM GLUE CODE
 
 
 _qemm_handler:
         iisp_header qemm_next_handler
         cmp dx, 0x0C0
-        je tnd_output
+        je tnd_emulate
         cmp dx, 0x0C1           ; ???
         je tnd_ignore
         cmp dx, 0x1E0
-        je tnd_output
+        je tnd_emulate
         cmp dx, 0x1E1           ; ???
         je tnd_ignore
         cmp dx, 0x201           ; ???
         je tnd_ignore
         cmp dx, 0x205
-        je tnd_output
+        je tnd_emulate
         cmp dx, 0x2C0
-        je tnd_output
+        je tnd_emulate
         jmp dword ptr cs:qemm_next_handler
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; EMM386 GLUE CODE
-
-
-        even
-_emm386_table:
-        dw 0x1E0, tnd_output
-        dw 0x1E1, tnd_ignore
-        dw 0x201, tnd_ignore
-        dw 0x205, tnd_output
-        dw 0x2C0, tnd_output
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; EMULATION CODE
 
 
-CONFIG                  STRUC
-lpt_port                dw ?
-bios_id                 db ?
-psp                     dw ?
-emm_type                db ?
-emm386_virt_io_handle   dw ?
-CONFIG                  ENDS
-
-
-_amis_header:           db 'SERDACO '           ;8 bytes: manufacturer
-                        db 'TNDLPT  '           ;8 bytes: product
-                        db 0                    ;no description
-
-;;; Configuration immediately follows AMIS header
-_config                 CONFIG <>
-
-
-tnd_output:
+tnd_emulate:
         test cl, 4
         je tnd_ignore
+        push ds
+        push cs
+        pop ds
         push ax
-        push cx
-        push dx
-
-        mov dx, cs:[_config.lpt_port]
-        out dx, al
-        inc dx
-        inc dx
-        mov al, 12
-        out dx, al
-
-        dec dx
-
-        ;; wait for NOT READY
-        mov cx, 0x18
-@@W1:   in al, dx
-        test al, 0x40
-        loopnz @@W1
-        ;; wait for READY
-        inc cx
-@@W2:   in al, dx
-        test al, 0x40
-        loopz @@W2
-
-        inc dx
-        mov al, 9
-        out dx, al
-
-        pop dx
-        pop cx
+        call tndlpt_output_
         pop ax
+        pop ds
 tnd_ignore:
         clc
         retf
+
 
         _TEXT ends
         end

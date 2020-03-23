@@ -1,5 +1,3 @@
-#pragma enum minimum
-
 union version {
   unsigned short word;
   struct {
@@ -17,7 +15,6 @@ _Packed struct iisp_header {
   char reserved[7];
 };
 
-
 enum emm_type {
   EMM_NONE = 0,
   EMM_EMM386,
@@ -25,15 +22,11 @@ enum emm_type {
 };
 
 _Packed struct config {
-  unsigned lpt_port;
   char bios_id;
-#ifdef _M_I86
   unsigned psp;
   enum emm_type emm_type;
   int emm386_virt_io_handle;
-#endif
 };
-
 
 extern struct config config;
 
@@ -45,5 +38,3 @@ extern char emm386_table[];
 extern struct iisp_header qemm_handler;
 
 extern char resident_end[];
-
-#pragma enum pop

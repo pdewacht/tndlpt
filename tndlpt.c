@@ -5,8 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "resident.h"
 #include "cputype.h"
+#include "resident.h"
+#include "tndlpt.h"
+#include "cmdline.h"
 
 
 #define STR(x) #x
@@ -142,14 +144,6 @@ void qpi_clear_port_trap(void __far **qpi_entry, int port);
   modify [ax]
 
 
-void qpi_clear_port_trap(void __far **qpi_entry, int port);
-#pragma aux qpi_clear_port_trap =               \
-  "mov ax, 0x1A0A"                              \
-  "call dword ptr [si]"                         \
-  parm [si] [dx]                                \
-  modify [ax]
-
-
 static bool amis_unhook(struct iisp_header __far *handler, unsigned our_seg) {
   for (;;) {
     struct iisp_header __far *next_handler;
@@ -240,11 +234,13 @@ static bool setup_qemm() {
   }
 
   for (i = 0; qemm_ports[i]; i++) {
-    if (qpi_get_port_trap(&qpi, qemm_ports[i])) {
-      char buf[5];
-      cputs("Warning: Some other program was already intercepting port 0");
-      cputs(itoa(qemm_ports[i], buf, 16));
-      cputs("h\r\n\r\n");
+    if (qemm_ports[i] != 0xC0) {
+      if (qpi_get_port_trap(&qpi, qemm_ports[i])) {
+        char buf[5];
+        cputs("Warning: Some other program was already intercepting port 0");
+        cputs(itoa(qemm_ports[i], buf, 16));
+        cputs("h\r\n\r\n");
+      }
     }
   }
   for (i = 0; qemm_ports[i]; i++) {
@@ -270,7 +266,9 @@ static bool shutdown_qemm(struct config __far *cfg) {
   }
 
   for (i = 0; qemm_ports[i]; i++) {
-    qpi_clear_port_trap(&qpi, qemm_ports[i]);
+    if (qemm_ports[i] != 0xC0) {
+      qpi_clear_port_trap(&qpi, qemm_ports[i]);
+    }
   }
 
   callback = qpi_get_io_callback(&qpi);
@@ -312,7 +310,7 @@ static void check_jemm(char bios_id) {
 
 
 static bool uninstall(struct config __far *cfg) {
-  struct iisp_header __far *current_handler;
+  struct iisp_header __far *current_amis_handler;
 
   if (cfg->emm_type == EMM_EMM386 && !shutdown_emm386(cfg)) {
     return false;
@@ -322,11 +320,11 @@ static bool uninstall(struct config __far *cfg) {
   }
 
   /* Unhook AMIS handler */
-  current_handler = (struct iisp_header __far *) _dos_getvect(0x2D);
-  if (FP_SEG(current_handler) == FP_SEG(cfg)) {
-    _dos_setvect(0x2D, current_handler->next_handler);
+  current_amis_handler = (struct iisp_header __far *) _dos_getvect(0x2D);
+  if (FP_SEG(current_amis_handler) == FP_SEG(cfg)) {
+    _dos_setvect(0x2D, current_amis_handler->next_handler);
   } else {
-    if (!amis_unhook(current_handler, FP_SEG(cfg))) {
+    if (!amis_unhook(current_amis_handler, FP_SEG(cfg))) {
       return false;
     }
   }
@@ -342,59 +340,34 @@ static short get_lpt_port(int i) {
 
 
 static void usage(void) {
-  cputs("Usage: TNDLPT LPT1|LPT2|LPT3\r\n"
+  cputs("Usage: TNDLPT [LPT1|LPT2|LPT3]\r\n"
+        "       TNDLPT STATUS\r\n"
         "       TNDLPT UNLOAD\r\n");
-  exit(1);
 }
 
 
 static void status(struct config __far *cfg) {
-  cputs("  Status: loaded\r\n");
+  cputs("  Status: ");
+  if (!cfg) {
+    cputs("not loaded\r\n");
+    return;
+  }
+  cputs("loaded\r\n");
+
   cputs("  Port: LPT");
   putch('1' + cfg->bios_id);
   cputs("\r\n");
 }
 
 
-static const char pp_mode[8][5] = {
-  "SPP", "PS/2", "FIFO", "ECP", "EPP", "???", "Test", "Cfg"
-};
-
-static void ecp(struct config __far *cfg) {
-  int dcr = cfg->lpt_port + 2;
-  int ecr = cfg->lpt_port + 0x402;
-  int orig_mode = (inp(ecr) >> 5) & 7;
-
-  outp(dcr, 0x00);
-  if (! ((inp(ecr) & 3) == 1 && (inp(dcr) & 3) != 1)) {
-    cputs("\r\nECP not found (first test failed)\r\n");
-    return;
-  }
-
-  outp(ecr, 0x34);
-  if (inp(ecr) != 0x35) {
-    cputs("\r\nECP not found (second test failed)\r\n");
-    return;
-  }
-
-  cputs("\r\nECP found, forcing SPP mode\r\n");
-  outp(ecr, 0x00);
-
-  cputs("  (previous mode was: ");
-  cputs(pp_mode[orig_mode]);
-  cputs(")\r\n");
-}
-
-
 int main(void) {
-  bool installed = false;
   bool found_unused_amis_id = false;
-  int unused_amis_id = -1;
-  struct config __far *cfg = &config;
+  struct config __far *resident = NULL;
+  enum mode mode;
   int i;
 
   cputs("TNDLPT " XSTR(VERSION_MAJOR) "." XSTR(VERSION_MINOR)
-        "  github.com/pdewacht/adlipt\r\n\r\n");
+        "  github.com/pdewacht/tndlpt\r\n\r\n");
 
   if (cpu_type() < 3) {
     cputs("This TSR requires a 386 or later CPU.\r\n");
@@ -413,105 +386,92 @@ int main(void) {
     else if (result == -1 && _fmemcmp(info.signature, amis_header, 16) == 0) {
       if (info.version.word != (VERSION_MAJOR * 256 + VERSION_MINOR)) {
         cputs("Error: A different version of TNDLPT is already loaded.\r\n");
-        exit(1);
+        return 1;
       }
-      installed = true;
-      cfg = (void __far *)(info.signature + _fstrlen(info.signature) + 1);
+      resident =
+        MK_FP(FP_SEG(info.signature),
+              *(short __far *)(info.signature + _fstrlen(info.signature) + 1));
       break;
     }
   }
 
-  /* Parse the command line */
+  mode = parse_command_line(MK_FP(_psp, 0x81));
+
+  if (mode == MODE_USAGE) {
+    usage();
+    return 1;
+  }
+
+  if (mode == MODE_UNLOAD) {
+    if (!resident) {
+      cputs("TNDLPT is not loaded.\r\n");
+      return 1;
+    } else if (uninstall(resident)) {
+      cputs("TNDLPT is now unloaded from memory.\r\n");
+      return 0;
+    } else {
+      cputs("Could not unload TNDLPT.\r\n");
+      return 1;
+    }
+  }
+
+  if (mode == MODE_STATUS) {
+    status(resident);
+    return 0;
+  }
+
+  if (mode != MODE_LOAD) {
+    return 1;
+  }
+
+  if (resident) {
+    cputs("TNDLPT was already loaded.\r\n\r\n");
+    status(resident);
+    return 1;
+  }
+
+  if (!found_unused_amis_id) {
+    cputs("Error: No unused AMIS multiplex id found\n");
+    return 1;
+  }
+
+  tndlpt_port = get_lpt_port(config.bios_id + 1);
+  if (!tndlpt_port) {
+    cputs("Error: LPT");
+    putch('1' + config.bios_id);
+    cputs(" is not present.\r\n");
+    return 1;
+  }
+
+  if (!tndlpt_init()) {
+    cputs("Error: TNDLPT is not responding\r\n");
+    return 1;
+  }
+
+  /* check_jemm(config.bios_id); */
+  if (!setup_qemm() && !setup_emm386()) {
+    cputs("Error: No supported memory manager found\r\n"
+          /* "Requires EMM386 4.46+, QEMM 7.03+ or JEMM\r\n" */
+          "Requires EMM386 4.46+ or QEMM 7.03+\r\n"
+          );
+    return 1;
+  }
+
+  status(&config);
+
+  /* hook AMIS interrupt */
+  amis_handler.next_handler = _dos_getvect(0x2D);
+  _dos_setvect(0x2D, (void (__interrupt *)()) &amis_handler);
+
+  /* free environment block */
   {
-    char cmdline[127];
-    int cmdlen;
-    char *arg;
-
-    cmdlen = *(char __far *)MK_FP(_psp, 0x80);
-    _fmemcpy(cmdline, MK_FP(_psp, 0x81), 127);
-    cmdline[cmdlen] = 0;
-
-    for (arg = strtok(cmdline, " "); arg; arg = strtok(NULL, " ")) {
-      if (strnicmp(arg, "lpt", 3) == 0 && (i = arg[3] - '0') >= 1 && i <= 3) {
-        int port = get_lpt_port(i);
-        if (!port) {
-          cputs("Error: LPT");
-          putch('0' + i);
-          cputs(" is not present.\r\n");
-          exit(1);
-        }
-        cfg->lpt_port = port;
-        cfg->bios_id = i - 1;
-      }
-      else if (stricmp(arg, "unload") == 0) {
-        if (!installed) {
-          cputs("TNDLPT is not loaded.\r\n");
-          exit(1);
-        } else if (uninstall(cfg)) {
-          cputs("TNDLPT is now unloaded from memory.\r\n");
-          exit(0);
-        } else {
-          cputs("Could not unload TNDLPT.\r\n");
-          exit(1);
-        }
-      } else {
-        usage();
-      }
-    }
-  }
-
-  if (!installed) {
-    if (!cfg->lpt_port) {
-      usage();
-      return 1;
-    }
-    cfg->psp = _psp;
-
-    if (!found_unused_amis_id) {
-      cputs("Error: No unused AMIS multiplex id found\n");
-      return 1;
-    }
-
-    check_jemm(cfg->bios_id);
-    if (!setup_qemm() && !setup_emm386()) {
-      cputs("Error: no supported memory manager found\r\n"
-            "Requires EMM386 4.46+, QEMM 7.03+ or JEMM\r\n");
-      return 1;
-    }
-
-    /* hook AMIS interrupt */
-    amis_handler.next_handler = _dos_getvect(0x2D);
-    _dos_setvect(0x2D, (void (__interrupt *)()) &amis_handler);
-  }
-
-  status(cfg);
-
-  ecp(cfg);
-  delay(100);
-
-  /* reset the sound chip */
-  outp(cfg->lpt_port + 2, 1);
-  delay(100);
-  outp(cfg->lpt_port + 2, 9);
-  delay(100);
-
-  {
-    /* silence */
-    char buf[5];
-    cputs("\r\nSilencing\r\n");
-    outp(0x205, 0x9F);
-    outp(0x205, 0xBF);
-    outp(0x205, 0xDF);
-    outp(0x205, 0xFF);
-  }
-
-  if (!installed) {
-    /* free environment block */
     int __far *env_seg = MK_FP(_psp, 0x2C);
     _dos_freemem(*env_seg);
     *env_seg = 0;
-
-    _dos_keep(0, ((char __huge *)&resident_end - (char __huge *)(_psp :> 0) + 15) / 16);
   }
-  return 0;
+
+  config.psp = _psp;
+
+  _dos_keep(0, ((char __huge *)&resident_end - (char __huge *)(_psp :> 0) + 15) / 16);
+  return 1;
 }
