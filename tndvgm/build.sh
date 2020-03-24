@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-VERSION=20200105
+VERSION=20200323
 
 CC='wcc -bt=dos -zq -oxhs -mc -zm'
 ZDEFS="-dNO_GZCOMPRESS"
