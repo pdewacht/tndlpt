@@ -9,6 +9,7 @@
 #include "resident.h"
 #include "tndlpt.h"
 #include "cmdline.h"
+#include "emmhack.h"
 
 
 #define STR(x) #x
@@ -165,6 +166,7 @@ static bool amis_unhook(struct iisp_header __far *handler, unsigned our_seg) {
 static bool setup_emm386() {
   unsigned char version[2];
   int handle, err, v;
+  int s = 0;
 
   err = _dos_open("EMMXXXX0", O_RDONLY, &handle);
   if (err) {
@@ -179,11 +181,23 @@ static bool setup_emm386() {
     return false;
   }
 
-  err = emm386_virtualize_io(0x1E0, 0x2C0, 5, &emm386_table, (int)&resident_end, &v);
+  err = emm386_hack();
+  if (err) {
+    s = 2;
+  }
+
+  err = emm386_virtualize_io(
+    s ? 0x1E0 : 0xC0, 0x2C0,
+    7 - s, &emm386_table[s],
+    (int)&resident_end, &v);
   if (err) {
     cputs("EMM386 I/O virtualization failed\r\n");
     exit(1);
   }
+  if (s) {
+    cputs("Could not virtualize port 0C0h\r\n");
+  }
+
   config.emm_type = EMM_EMM386;
   config.emm386_virt_io_handle = v;
   return true;

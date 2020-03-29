@@ -28,13 +28,18 @@ _Packed struct config {
   int emm386_virt_io_handle;
 };
 
+_Packed struct emm386_handler {
+  short port;
+  void (*f)();
+};
+
 extern struct config config;
 
 extern struct iisp_header amis_handler;
 extern char amis_header[];
 extern char amis_id;
 
-extern char emm386_table[];
+extern struct emm386_handler emm386_table[];
 extern struct iisp_header qemm_handler;
 
 extern char resident_end[];

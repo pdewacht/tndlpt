@@ -82,9 +82,11 @@ _retf:
 
         even
 _emm386_table:
+        dw 0x0C0, tnd_emulate
+        dw 0x0C1, tnd_ignore    ; ???
         dw 0x1E0, tnd_emulate
-        dw 0x1E1, tnd_ignore
-        dw 0x201, tnd_ignore
+        dw 0x1E1, tnd_ignore    ; ???
+        dw 0x201, tnd_ignore    ; ???
         dw 0x205, tnd_emulate
         dw 0x2C0, tnd_emulate
 

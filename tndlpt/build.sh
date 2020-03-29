@@ -2,7 +2,7 @@
 set -e
 
 VERSION_MAJOR=0
-VERSION_MINOR=10
+VERSION_MINOR=11
 
 CC='wcc -bt=dos -zq -oxhs'
 CC32='wcc386 -mf -zl -zls -zq -oxhs'
@@ -13,6 +13,7 @@ DEFS="-dVERSION_MAJOR=$VERSION_MAJOR -dVERSION_MINOR=$VERSION_MINOR"
 set -x
 ragel -T1 cmdline.rl
 $CC $DEFS tndlpt.c
+$CC $DEFS emmhack.c
 $CC $DEFS cmdline.c
 $CC $DEFS tndinit.c
 $CC $DEFS tndout.c
