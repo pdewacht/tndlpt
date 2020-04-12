@@ -6,27 +6,25 @@
 #include "../tndlpt/tndlpt.h"
 #include "vgm.h"
 
-
 #define STR(x) #x
 #define XSTR(x) STR(x)
 
-
 int tndlpt_port;
-
 
 static volatile int interrupted = 0;
 
-static void __interrupt __far ctrlc_handler() {
+static void __interrupt __far ctrlc_handler()
+{
   interrupted = 1;
 }
 
-
-static short get_lpt_port(int i) {
-  return *(short __far *)MK_FP(0x40, 6 + 2*i);
+static short get_lpt_port(int i)
+{
+  return *(short __far *)MK_FP(0x40, 6 + 2 * i);
 }
 
-
-static short setup(void) {
+static short setup(void)
+{
   char num_ports, port, i;
 
   num_ports = 0;
@@ -67,8 +65,8 @@ static short setup(void) {
   return get_lpt_port(port);
 }
 
-
-void warnx(const char *fmt, ...) {
+void warnx(const char *fmt, ...)
+{
   va_list ap;
   va_start(ap, fmt);
   vcprintf(fmt, ap);
@@ -76,8 +74,8 @@ void warnx(const char *fmt, ...) {
   va_end(ap);
 }
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   gzFile f;
   char *filename;
   short lpt_base;

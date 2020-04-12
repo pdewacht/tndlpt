@@ -1,4 +1,4 @@
 bool music_setup(gzFile f);
-void music_start();
-void music_shutdown();
-bool music_loop();
+void music_start(void);
+void music_shutdown(void);
+bool music_loop(void);

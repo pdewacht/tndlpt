@@ -11,10 +11,8 @@
 #include "cmdline.h"
 #include "emmhack.h"
 
-
 #define STR(x) #x
 #define XSTR(x) STR(x)
-
 
 int amis_install_check(char amis_id, struct amis_info *info);
 #pragma aux amis_install_check =                \
@@ -33,8 +31,7 @@ struct amis_info {
   union version version;
 };
 
-
-int ioctl_read(int handle, char __near *buf, int nbytes);
+int ioctl_read(int handle, char __near * buf, int nbytes);
 #pragma aux ioctl_read =                        \
   "mov ax, 0x4402"                              \
   "int 0x21"                                    \
@@ -43,13 +40,15 @@ int ioctl_read(int handle, char __near *buf, int nbytes);
   value [dx]                                    \
   modify [ax bx cx dx si di]
 
-static int emm386_get_version(int handle, char __near *version_buf) {
+static int emm386_get_version(int handle, char __near * version_buf)
+{
   /* Interrupt list: 214402SF02 GET MEMORY MANAGER VERSION */
   version_buf[0] = 2;
   return ioctl_read(handle, version_buf, 2);
 }
 
-int emm386_virtualize_io(int first, int last, int count, void __far *table, int size, int *out_handle);
+int emm386_virtualize_io(int first, int last, int count,
+                         void __far * table, int size, int *out_handle);
 /* Interrupt list: 2F4A15BX0000 INSTALL I/O VIRTUALIZATION HANDLER */
 #pragma aux emm386_virtualize_io =              \
   ".386"                                        \
@@ -71,7 +70,6 @@ int emm386_virtualize_io(int first, int last, int count, void __far *table, int 
   value [ax]                                    \
   modify [ax bx cx dx si di]
 
-
 int emm386_unvirtualize_io(int handle);
 #pragma aux emm386_unvirtualize_io =            \
   "mov ax, 0x4A15"                              \
@@ -83,8 +81,7 @@ int emm386_unvirtualize_io(int handle);
   value [ax]                                    \
   modify [ax bx cx dx si di]
 
-
-int qemm_get_qpi_entry_point(int handle, void __far **qpi_entry);
+int qemm_get_qpi_entry_point(int handle, void __far ** qpi_entry);
 #pragma aux qemm_get_qpi_entry_point =          \
   "mov ax, 0x4402"                              \
   "mov cx, 4"                                   \
@@ -93,8 +90,7 @@ int qemm_get_qpi_entry_point(int handle, void __far **qpi_entry);
   parm [bx] [dx]                                \
   modify [bx cx dx si di]
 
-
-int qpi_get_version(void __far **qpi_entry);
+int qpi_get_version(void __far ** qpi_entry);
 #pragma aux qpi_get_version =                   \
   "mov ah, 3"                                   \
   "call dword ptr [si]"                         \
@@ -102,8 +98,7 @@ int qpi_get_version(void __far **qpi_entry);
   value [bx]                                    \
   modify [ax]
 
-
-void __far *qpi_get_io_callback(void __far **qpi_entry);
+void __far *qpi_get_io_callback(void __far ** qpi_entry);
 #pragma aux qpi_get_io_callback =               \
   "mov ax, 0x1A06"                              \
   "call dword ptr [si]"                         \
@@ -111,16 +106,14 @@ void __far *qpi_get_io_callback(void __far **qpi_entry);
   value [es di]                                 \
   modify [ax]
 
-
-void qpi_set_io_callback(void __far **qpi_entry, void __far *callback);
+void qpi_set_io_callback(void __far ** qpi_entry, void __far * callback);
 #pragma aux qpi_set_io_callback =               \
   "mov ax, 0x1A07"                              \
   "call dword ptr [si]"                         \
   parm [si] [es di]                             \
   modify [ax   dx]
 
-
-char qpi_get_port_trap(void __far **qpi_entry, int port);
+char qpi_get_port_trap(void __far ** qpi_entry, int port);
 #pragma aux qpi_get_port_trap =                 \
   "mov ax, 0x1A08"                              \
   "call dword ptr [si]"                         \
@@ -128,24 +121,22 @@ char qpi_get_port_trap(void __far **qpi_entry, int port);
   value [bl]                                    \
   modify [ax]
 
-
-void qpi_set_port_trap(void __far **qpi_entry, int port);
+void qpi_set_port_trap(void __far ** qpi_entry, int port);
 #pragma aux qpi_set_port_trap =                 \
   "mov ax, 0x1A09"                              \
   "call dword ptr [si]"                         \
   parm [si] [dx]                                \
   modify [ax]
 
-
-void qpi_clear_port_trap(void __far **qpi_entry, int port);
+void qpi_clear_port_trap(void __far ** qpi_entry, int port);
 #pragma aux qpi_clear_port_trap =               \
   "mov ax, 0x1A0A"                              \
   "call dword ptr [si]"                         \
   parm [si] [dx]                                \
   modify [ax]
 
-
-static bool amis_unhook(struct iisp_header __far *handler, unsigned our_seg) {
+static bool amis_unhook(struct iisp_header __far * handler, unsigned our_seg)
+{
   for (;;) {
     struct iisp_header __far *next_handler;
     if (handler->jump_to_start != 0x10EB
@@ -162,8 +153,8 @@ static bool amis_unhook(struct iisp_header __far *handler, unsigned our_seg) {
   }
 }
 
-
-static bool setup_emm386() {
+static bool setup_emm386(void)
+{
   unsigned char version[2];
   int handle, err, v;
   int s = 0;
@@ -186,10 +177,8 @@ static bool setup_emm386() {
     s = 2;
   }
 
-  err = emm386_virtualize_io(
-    s ? 0x1E0 : 0xC0, 0x2C0,
-    7 - s, &emm386_table[s],
-    (int)&resident_end, &v);
+  err = emm386_virtualize_io(s ? 0x1E0 : 0xC0, 0x2C0,
+                             7 - s, &emm386_table[s], (int)&resident_end, &v);
   if (err) {
     cputs("EMM386 I/O virtualization failed\r\n");
     exit(1);
@@ -203,8 +192,8 @@ static bool setup_emm386() {
   return true;
 }
 
-
-static bool shutdown_emm386(struct config __far *cfg) {
+static bool shutdown_emm386(struct config __far * cfg)
+{
   int err;
   err = emm386_unvirtualize_io(cfg->emm386_virt_io_handle);
   if (err) {
@@ -214,8 +203,8 @@ static bool shutdown_emm386(struct config __far *cfg) {
   return true;
 }
 
-
-static void __far *get_qpi_entry_point() {
+static void __far *get_qpi_entry_point(void)
+{
   int handle, err;
   void __far *qpi;
   err = _dos_open("QEMM386$", O_RDONLY, &handle);
@@ -230,10 +219,11 @@ static void __far *get_qpi_entry_point() {
   return qpi;
 }
 
+static const int qemm_ports[] =
+    { 0x0C0, 0x0C1, 0x1E0, 0x1E1, 0x201, 0x205, 0x2C0, 0 };
 
-static const int qemm_ports[] = { 0x0C0, 0x0C1, 0x1E0, 0x1E1, 0x201, 0x205, 0x2C0, 0 };
-
-static bool setup_qemm() {
+static bool setup_qemm(void)
+{
   void __far *qpi;
   int version;
   int i;
@@ -268,8 +258,8 @@ static bool setup_qemm() {
   return true;
 }
 
-
-static bool shutdown_qemm(struct config __far *cfg) {
+static bool shutdown_qemm(struct config __far * cfg)
+{
   void __far *qpi;
   struct iisp_header __far *callback;
   int i;
@@ -297,8 +287,8 @@ static bool shutdown_qemm(struct config __far *cfg) {
   return true;
 }
 
-
-static void check_jemm(char bios_id) {
+static void check_jemm(char bios_id)
+{
   unsigned char buf[6] = { 0 };
   int handle, err;
 
@@ -322,19 +312,18 @@ static void check_jemm(char bios_id) {
   exit(1);
 }
 
-
-static bool uninstall(struct config __far *cfg) {
+static bool uninstall(struct config __far * cfg)
+{
   struct iisp_header __far *current_amis_handler;
 
   if (cfg->emm_type == EMM_EMM386 && !shutdown_emm386(cfg)) {
     return false;
-  }
-  else if (cfg->emm_type == EMM_QEMM && !shutdown_qemm(cfg)) {
+  } else if (cfg->emm_type == EMM_QEMM && !shutdown_qemm(cfg)) {
     return false;
   }
 
   /* Unhook AMIS handler */
-  current_amis_handler = (struct iisp_header __far *) _dos_getvect(0x2D);
+  current_amis_handler = (struct iisp_header __far *)_dos_getvect(0x2D);
   if (FP_SEG(current_amis_handler) == FP_SEG(cfg)) {
     _dos_setvect(0x2D, current_amis_handler->next_handler);
   } else {
@@ -347,20 +336,20 @@ static bool uninstall(struct config __far *cfg) {
   return true;
 }
 
-
-static short get_lpt_port(int i) {
-  return *(short __far *)MK_FP(0x40, 6 + 2*i);
+static short get_lpt_port(int i)
+{
+  return *(short __far *)MK_FP(0x40, 6 + 2 * i);
 }
 
-
-static void usage(void) {
+static void usage(void)
+{
   cputs("Usage: TNDLPT [LPT1|LPT2|LPT3]\r\n"
         "       TNDLPT STATUS\r\n"
         "       TNDLPT UNLOAD\r\n");
 }
 
-
-static void status(struct config __far *cfg) {
+static void status(struct config __far * cfg)
+{
   cputs("  Status: ");
   if (!cfg) {
     cputs("not loaded\r\n");
@@ -373,8 +362,8 @@ static void status(struct config __far *cfg) {
   cputs("\r\n");
 }
 
-
-int main(void) {
+int main(void)
+{
   bool found_unused_amis_id = false;
   struct config __far *resident = NULL;
   enum mode mode;
@@ -396,15 +385,15 @@ int main(void) {
     if (result == 0 && !found_unused_amis_id) {
       found_unused_amis_id = true;
       amis_id = i;
-    }
-    else if (result == -1 && _fmemcmp(info.signature, amis_header, 16) == 0) {
+    } else if (result == -1 && _fmemcmp(info.signature, amis_header, 16) == 0) {
       if (info.version.word != (VERSION_MAJOR * 256 + VERSION_MINOR)) {
         cputs("Error: A different version of TNDLPT is already loaded.\r\n");
         return 1;
       }
       resident =
-        MK_FP(FP_SEG(info.signature),
-              *(short __far *)(info.signature + _fstrlen(info.signature) + 1));
+          MK_FP(FP_SEG(info.signature),
+                *(short __far *)(info.signature +
+                                 _fstrlen(info.signature) + 1));
       break;
     }
   }
@@ -466,8 +455,7 @@ int main(void) {
   if (!setup_qemm() && !setup_emm386()) {
     cputs("Error: No supported memory manager found\r\n"
           /* "Requires EMM386 4.46+, QEMM 7.03+ or JEMM\r\n" */
-          "Requires EMM386 4.46+ or QEMM 7.03+\r\n"
-          );
+          "Requires EMM386 4.46+ or QEMM 7.03+\r\n");
     return 1;
   }
 
@@ -475,7 +463,7 @@ int main(void) {
 
   /* hook AMIS interrupt */
   amis_handler.next_handler = _dos_getvect(0x2D);
-  _dos_setvect(0x2D, (void (__interrupt *)()) &amis_handler);
+  _dos_setvect(0x2D, (void (__interrupt *) ())&amis_handler);
 
   /* free environment block */
   {
@@ -485,7 +473,9 @@ int main(void) {
   }
 
   config.psp = _psp;
-
-  _dos_keep(0, ((char __huge *)&resident_end - (char __huge *)(_psp :> 0) + 15) / 16);
+  {
+    int size = (char __huge *)&resident_end - (char __huge *)(MK_FP(_psp, 0));
+    _dos_keep(0, (size + 15) / 16);
+  }
   return 1;
 }

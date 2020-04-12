@@ -2,12 +2,13 @@
 #include <dos.h>
 #include <conio.h>
 
-static void (__interrupt __far *prev_timer_handler)();
+static void (__interrupt __far * prev_timer_handler) ();
 static volatile unsigned timer_ticks;
 static unsigned timer_counter;
 static unsigned timer_sum;
 
-void __interrupt __far timer_handler() {
+void __interrupt __far timer_handler()
+{
   unsigned old_sum = timer_sum;
 
   ++timer_ticks;
@@ -20,7 +21,8 @@ void __interrupt __far timer_handler() {
   }
 }
 
-void timer_setup(unsigned frequency) {
+void timer_setup(unsigned frequency)
+{
   timer_ticks = 0;
   timer_counter = 0x1234DD / frequency;
   timer_sum = 0;
@@ -35,7 +37,8 @@ void timer_setup(unsigned frequency) {
   _enable();
 }
 
-void timer_shutdown() {
+void timer_shutdown(void)
+{
   _disable();
   outp(0x43, 0x34);
   outp(0x40, 0);
@@ -45,7 +48,8 @@ void timer_shutdown() {
   _dos_setvect(0x08, prev_timer_handler);
 }
 
-unsigned timer_get_elapsed() {
+unsigned timer_get_elapsed(void)
+{
   unsigned result;
   _disable();
   result = timer_ticks;

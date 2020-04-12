@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
       lpt = 3;
     }
   }
-  tndlpt_port = *(short __far *)MK_FP(0x40, 6 + 2*lpt);
+  tndlpt_port = *(short __far *)MK_FP(0x40, 6 + 2 * lpt);
   tndlpt_init();
   return 0;
 }

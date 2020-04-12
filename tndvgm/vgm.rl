@@ -9,9 +9,25 @@
 
 extern void warnx(const char *fmt, ...);
 
-
 #define TIMER_HZ 300
 #define VGM_TICKS_PER_TIMER_TICK (44100 / TIMER_HZ)
+
+struct vgm_state {
+  int cs;
+  unsigned char __near *p;
+  unsigned char __near *pe;
+
+  gzFile f;
+  unsigned char buf[8192];
+  long remaining;
+
+  long ticks;
+  long delay;
+  unsigned long arg;
+  char warning_flag[256];
+};
+
+static struct vgm_state vgm;
 
 %%{
 machine vgm;
@@ -118,26 +134,8 @@ main := (command @{fbreak;})**;
 write data;
 }%%
 
-
-struct vgm_state {
-  int cs;
-  unsigned char __near *p;
-  unsigned char __near *pe;
-
-  gzFile f;
-  unsigned char buf[8192];
-  long remaining;
-
-  long ticks;
-  long delay;
-  unsigned long arg;
-  char warning_flag[256];
-};
-
-static struct vgm_state vgm;
-
-
-static void warn_unimplemented() {
+static void warn_unimplemented(void)
+{
   unsigned char cmd = *vgm.p;
   if (!vgm.warning_flag[cmd]) {
     vgm.warning_flag[cmd] = 1;
@@ -145,8 +143,8 @@ static void warn_unimplemented() {
   }
 }
 
-
-static bool refill() {
+static bool refill(void)
+{
   int used, unused, to_read, result;
   unsigned char __near *dest;
 
@@ -177,8 +175,8 @@ static bool refill() {
   return true;
 }
 
-
-bool music_setup(gzFile f) {
+bool music_setup(gzFile f)
+{
   unsigned long header[64];
   unsigned long version, psg_hz;
   long fpos_start, fpos_end;
@@ -227,11 +225,13 @@ bool music_setup(gzFile f) {
   return true;
 }
 
-void music_start() {
+void music_start(void)
+{
   timer_setup(TIMER_HZ);
 }
 
-void music_shutdown() {
+void music_shutdown(void)
+{
   timer_shutdown();
 
   tndlpt_output(0x9F);
@@ -240,8 +240,8 @@ void music_shutdown() {
   tndlpt_output(0xFF);
 }
 
-
-bool music_loop() {
+bool music_loop(void)
+{
   vgm.ticks += timer_get_elapsed() * VGM_TICKS_PER_TIMER_TICK;
   if (vgm.delay > 16) {
     if (vgm.ticks < vgm.delay) {

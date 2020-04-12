@@ -3,8 +3,8 @@
 #include <string.h>
 #include "emmhack.h"
 
-
-int emm386_virtualize_io(int first, int last, int count, void __far *table, int size, int *out_handle);
+int emm386_virtualize_io(int first, int last, int count,
+                         void __far * table, int size, int *out_handle);
 /* Interrupt list: 2F4A15BX0000 INSTALL I/O VIRTUALIZATION HANDLER */
 #pragma aux emm386_virtualize_io =              \
   ".386"                                        \
@@ -26,7 +26,6 @@ int emm386_virtualize_io(int first, int last, int count, void __far *table, int 
   value [ax]                                    \
   modify [ax bx cx dx si di]
 
-
 int emm386_unvirtualize_io(int handle);
 #pragma aux emm386_unvirtualize_io =            \
   "mov ax, 0x4A15"                              \
@@ -38,10 +37,9 @@ int emm386_unvirtualize_io(int handle);
   value [ax]                                    \
   modify [ax bx cx dx si di]
 
-
-static char __far *xmemmem(const char __far *haystack,
+static char __far *xmemmem(const char __far * haystack,
                            size_t haystack_len,
-                           const char *needle,
+                           const char __far * needle,
                            size_t needle_len)
 {
   /* assert(needle_len > 0); */
@@ -60,7 +58,6 @@ static char __far *xmemmem(const char __far *haystack,
   }
   return 0;
 }
-
 
 void clc(void);
 #pragma aux clc = "clc"
@@ -81,9 +78,7 @@ static char __far apply_patch(void)
   int err = 1;
 
   cld();
-  match = xmemmem(
-    MK_FP(0xF8, 0), 0xFFFF,
-    needle, sizeof(needle));
+  match = xmemmem(MK_FP(0xF8, 0), 0xFFFF, needle, sizeof(needle));
 
   if (match) {
     short __far *limit = (short __far *)(match + sizeof(needle));
@@ -96,12 +91,11 @@ static char __far apply_patch(void)
   return err;
 }
 
-
 #define PORT 0x210
 
 int emm386_hack(void)
 {
-  static const int cb[2] = { PORT, (int) apply_patch };
+  static const int cb[2] = { PORT, (int)apply_patch };
   int err, handle;
   err = emm386_virtualize_io(PORT, PORT, 1, &cb, 0x7FFF, &handle);
   if (err) {
