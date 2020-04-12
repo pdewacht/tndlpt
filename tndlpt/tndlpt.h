@@ -1,6 +1,6 @@
 extern int tndlpt_port;
 
-int tndlpt_init();
+int tndlpt_init(void);
 
 int tndlpt_output(char cmd_byte);
 

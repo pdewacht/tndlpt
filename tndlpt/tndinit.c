@@ -2,11 +2,10 @@
 #include <i86.h>
 #include "tndlpt.h"
 
-
-int tndlpt_init(int lpt_port) {
-  int dcr = lpt_port + 2;
-  int ecr = lpt_port + 0x402;
-  tndlpt_port = lpt_port;
+int tndlpt_init(void)
+{
+  int dcr = tndlpt_port + 2;
+  int ecr = tndlpt_port + 0x402;
 
   /* Disable ECP */
   outp(dcr, 0x00);
