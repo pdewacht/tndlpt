@@ -4,7 +4,7 @@
 int tndlpt_output(char cmd_byte)
 {
   int port = tndlpt_port;
-  int wait = 24;
+  int wait = 32;
   outp(port, cmd_byte);
   port += 2;
   outp(port, 0x0C);
