@@ -98,9 +98,10 @@ int main(int argc, char *argv[])
   }
 
   tndlpt_port = setup();
-  if (!tndlpt_init()) {
+  if (!tndlpt_init(false)) {
     cputs("\r\nError: TNDLPT is not responding\r\n");
-    return 1;
+    /* return 1; */
+    tndlpt_init(true);
   }
 
   cputs("\r\nPress any key to start the music...");

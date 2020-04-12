@@ -446,7 +446,11 @@ int main(void)
     return 1;
   }
 
-  if (!tndlpt_init()) {
+  if (config.debug) {
+    tndlpt_debug();
+  }
+
+  if (!tndlpt_init(false)) {
     cputs("Error: TNDLPT is not responding\r\n");
     return 1;
   }

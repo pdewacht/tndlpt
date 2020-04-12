@@ -6,6 +6,7 @@ file res_data
 file res_end
 
 file tndinit
+file tnddebug
 file cmdline
 file tndlpt
 file emmhack

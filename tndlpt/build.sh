@@ -17,6 +17,7 @@ $CC $DEFS emmhack.c
 $CC $DEFS cmdline.c
 $CC $DEFS tndinit.c
 $CC $DEFS tndout.c
+$CC $DEFS tnddebug.c
 $CC $DEFS res_data.c
 $AS $DEFS resident.s
 $AS $DEFS res_end.s

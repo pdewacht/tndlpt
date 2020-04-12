@@ -2,7 +2,7 @@
 #include <i86.h>
 #include "tndlpt.h"
 
-int tndlpt_init(void)
+int tndlpt_init(bool force)
 {
   int dcr = tndlpt_port + 2;
   int ecr = tndlpt_port + 0x402;
@@ -14,7 +14,7 @@ int tndlpt_init(void)
   }
 
   /* Initialize the sound chip */
-  if (!tndlpt_output(0x9F)) {
+  if (!tndlpt_output(0x9F) && !force) {
     return 0;
   }
   tndlpt_output(0xBF);

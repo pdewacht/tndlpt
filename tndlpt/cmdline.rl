@@ -10,14 +10,16 @@ action mode_load       { mode = MODE_LOAD; }
 action mode_unload     { mode = MODE_UNLOAD; }
 action mode_status     { mode = MODE_STATUS; }
 action opt_lpt         { config.bios_id = *p - '1'; }
+action opt_debug       { config.debug = 1; }
 
 # accept C NUL-terminated strings and DOS CR-terminated strings
 end = (0 | 13) @{ fbreak; };
 sep = " "+;
 
-load_opt = (
-  /LPT[123]/i  @opt_lpt
-);
+load_opt =
+  ( /LPT[123]/i  @opt_lpt
+  | /DEBUG/i     @opt_debug
+  );
 
 load   = (load_opt . (sep . load_opt)*)?  %mode_load;
 unload = /UNLOAD/i                        @mode_unload;

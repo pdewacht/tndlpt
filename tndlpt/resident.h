@@ -23,6 +23,7 @@ enum emm_type {
 
 _Packed struct config {
   char bios_id;
+  char debug;
   unsigned psp;
   enum emm_type emm_type;
   int emm386_virt_io_handle;
