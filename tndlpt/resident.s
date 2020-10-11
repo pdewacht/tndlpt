@@ -83,10 +83,9 @@ _retf:
         even
 _emm386_table:
         dw 0x0C0, tnd_emulate
-        dw 0x0C1, tnd_ignore    ; ???
+        dw 0x0C1, tnd_emulate
         dw 0x1E0, tnd_emulate
-        dw 0x1E1, tnd_ignore    ; ???
-        dw 0x201, tnd_ignore    ; ???
+        dw 0x1E1, tnd_emulate
         dw 0x205, tnd_emulate
         dw 0x2C0, tnd_emulate
 
@@ -99,14 +98,12 @@ _qemm_handler:
         iisp_header qemm_next_handler
         cmp dx, 0x0C0
         je tnd_emulate
-        cmp dx, 0x0C1           ; ???
-        je tnd_ignore
+        cmp dx, 0x0C1
+        je tnd_emulate
         cmp dx, 0x1E0
         je tnd_emulate
-        cmp dx, 0x1E1           ; ???
-        je tnd_ignore
-        cmp dx, 0x201           ; ???
-        je tnd_ignore
+        cmp dx, 0x1E1
+        je tnd_emulate
         cmp dx, 0x205
         je tnd_emulate
         cmp dx, 0x2C0

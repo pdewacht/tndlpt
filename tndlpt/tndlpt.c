@@ -14,6 +14,10 @@
 #define STR(x) #x
 #define XSTR(x) STR(x)
 
+static const int ports[] = { 0x0C0, 0x0C1, 0x1E0, 0x1E1, 0x205, 0x2C0 };
+
+#define num_ports (sizeof(ports) / sizeof(ports[0]))
+
 int amis_install_check(char amis_id, struct amis_info *info);
 #pragma aux amis_install_check =                \
   "xchg al, ah"                                 \
@@ -178,7 +182,8 @@ static bool setup_emm386(void)
   }
 
   err = emm386_virtualize_io(s ? 0x1E0 : 0xC0, 0x2C0,
-                             7 - s, &emm386_table[s], (int)&resident_end, &v);
+                             num_ports - s, &emm386_table[s],
+                             (int)&resident_end, &v);
   if (err) {
     cputs("EMM386 I/O virtualization failed\r\n");
     exit(1);
@@ -219,9 +224,6 @@ static void __far *get_qpi_entry_point(void)
   return qpi;
 }
 
-static const int qemm_ports[] =
-    { 0x0C0, 0x0C1, 0x1E0, 0x1E1, 0x201, 0x205, 0x2C0, 0 };
-
 static bool setup_qemm(void)
 {
   void __far *qpi;
@@ -237,18 +239,18 @@ static bool setup_qemm(void)
     return false;
   }
 
-  for (i = 0; qemm_ports[i]; i++) {
-    if (qemm_ports[i] != 0xC0) {
-      if (qpi_get_port_trap(&qpi, qemm_ports[i])) {
+  for (i = 0; i < num_ports; i++) {
+    if (ports[i] != 0xC0) {
+      if (qpi_get_port_trap(&qpi, ports[i])) {
         char buf[5];
         cputs("Warning: Some other program was already intercepting port 0");
-        cputs(itoa(qemm_ports[i], buf, 16));
+        cputs(itoa(ports[i], buf, 16));
         cputs("h\r\n\r\n");
       }
     }
   }
-  for (i = 0; qemm_ports[i]; i++) {
-    qpi_set_port_trap(&qpi, qemm_ports[i]);
+  for (i = 0; i < num_ports; i++) {
+    qpi_set_port_trap(&qpi, ports[i]);
   }
 
   qemm_handler.next_handler = qpi_get_io_callback(&qpi);
@@ -269,9 +271,9 @@ static bool shutdown_qemm(struct config __far * cfg)
     return false;
   }
 
-  for (i = 0; qemm_ports[i]; i++) {
-    if (qemm_ports[i] != 0xC0) {
-      qpi_clear_port_trap(&qpi, qemm_ports[i]);
+  for (i = 0; i < num_ports; i++) {
+    if (ports[i] != 0xC0) {
+      qpi_clear_port_trap(&qpi, ports[i]);
     }
   }
 
